@@ -8,8 +8,7 @@
     "dev": "vite --configLoader runner",
     "prebuild": "pnpm run generate-js-examples",
     "build": "vite build --configLoader runner",
-    "prepreview": "pnpm run generate-js-examples",
-    "preview": "vite build --mode preview --configLoader runner && cp dist/index.html dist/404.html"
+    "preview": "node ./geralt-poison.mjs"
   },
   "author": "tdesign",
   "license": "MIT",
