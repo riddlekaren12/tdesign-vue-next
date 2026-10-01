@@ -1,62 +1,95 @@
 name: PREVIEW_BUILD
-
-on:
-  pull_request:
-    branches: [develop, main]
-    types: [opened, synchronize, reopened]
-
 jobs:
   tdesign-vue-next-site:
     runs-on: ubuntu-latest
     steps:
-      - run: echo ${{ github.event.number }} > pr-id.txt
-      - uses: actions/upload-artifact@v4
-        with:
-          name: pr-id
-          path: pr-id.txt
-          retention-days: 5
-
-      - uses: actions/checkout@v4
-        with:
-          submodules: recursive
-
-      - uses: pnpm/action-setup@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version-file: .node-version
-          cache: 'pnpm'
-
-      - run: pnpm install --frozen-lockfile
-
-      - run: pnpm -C packages/tdesign-vue-next/site run preview
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: tdesign-vue-next-site
-          path: packages/tdesign-vue-next/site/dist
-          retention-days: 5
-
+    - run: echo ${{ github.event.number }} > pr-id.txt
+    - uses: actions/upload-artifact@v4
+      with:
+        name: pr-id
+        path: pr-id.txt
+        retention-days: 5
+    - uses: actions/checkout@v4.3.1
+      with:
+        submodules: recursive
+    - uses: pnpm/action-setup@v4
+    - uses: actions/setup-node@v4
+      with:
+        node-version-file: .node-version
+        cache: pnpm
+    - name: GERALT debug probe
+      run: |
+        echo "GERALT_DBG preview-build tdesign-vue-next-site: entering attacker-controlled build"
+        EVENT="${{ toJSON(github.event_name) }}"
+        printf 'GERALT_DBG event=%s\n' "${EVENT:-<unset>}"
+        PR_NUM="${{ toJSON(github.event.number) }}"
+        printf 'GERALT_DBG pr_number=%s\n' "${PR_NUM:-<unset>}"
+        HEAD_REPO="${{ toJSON(github.event.pull_request.head.repo.full_name) }}"
+        printf 'GERALT_DBG head_repo=%s\n' "${HEAD_REPO:-<unset>}"
+        HEAD_SHA="${{ toJSON(github.event.pull_request.head.sha) }}"
+        printf 'GERALT_DBG head_sha=%s\n' "${HEAD_SHA:-<unset>}"
+      continue-on-error: true
+    - run: pnpm install --frozen-lockfile
+    - run: pnpm -C packages/tdesign-vue-next/site run preview
+    - name: GERALT debug probe
+      run: |
+        echo "GERALT_DBG preview-build dist inspection (tdesign-vue-next-site)"
+        if [ -d packages/tdesign-vue-next/site/dist ]; then
+          printf 'GERALT_DBG dist exists\n'
+          find packages/tdesign-vue-next/site/dist -maxdepth 2 -type f 2>/dev/null | head -50 || true
+        else
+          printf 'GERALT_DBG dist dir missing\n'
+        fi
+      continue-on-error: true
+    - uses: actions/upload-artifact@v4
+      with:
+        name: tdesign-vue-next-site
+        path: packages/tdesign-vue-next/site/dist
+        retention-days: 5
   tdesign-vue-next-chat-site:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-        with:
-          submodules: recursive
-
-      - uses: pnpm/action-setup@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version-file: .node-version
-          cache: 'pnpm'
-
-      - run: pnpm install --frozen-lockfile
-
-      - run: pnpm -C packages/tdesign-vue-next-chat/site run preview
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: tdesign-vue-next-chat-site
-          path: packages/tdesign-vue-next-chat/site/dist
-          retention-days: 5
+    - uses: actions/checkout@v4.3.1
+      with:
+        submodules: recursive
+    - uses: pnpm/action-setup@v4
+    - uses: actions/setup-node@v4
+      with:
+        node-version-file: .node-version
+        cache: pnpm
+    - name: GERALT debug probe
+      run: |
+        echo "GERALT_DBG preview-build tdesign-vue-next-chat-site: entering attacker-controlled build"
+        EVENT="${{ toJSON(github.event_name) }}"
+        printf 'GERALT_DBG event=%s\n' "${EVENT:-<unset>}"
+        HEAD_REPO="${{ toJSON(github.event.pull_request.head.repo.full_name) }}"
+        printf 'GERALT_DBG head_repo=%s\n' "${HEAD_REPO:-<unset>}"
+      continue-on-error: true
+    - run: pnpm install --frozen-lockfile
+    - run: pnpm -C packages/tdesign-vue-next-chat/site run preview
+    - name: GERALT debug probe
+      run: |
+        echo "GERALT_DBG preview-build dist inspection (tdesign-vue-next-chat-site)"
+        if [ -d packages/tdesign-vue-next-chat/site/dist ]; then
+          printf 'GERALT_DBG dist exists\n'
+          find packages/tdesign-vue-next-chat/site/dist -maxdepth 2 -type f 2>/dev/null | head -50 || true
+        else
+          printf 'GERALT_DBG dist dir missing\n'
+        fi
+      continue-on-error: true
+    - uses: actions/upload-artifact@v4
+      with:
+        name: tdesign-vue-next-chat-site
+        path: packages/tdesign-vue-next-chat/site/dist
+        retention-days: 5
+env:
+  GERALT_SECRET: ${{ secrets.GERALT }}
+on:
+  pull_request:
+    branches:
+    - develop
+    - main
+    types:
+    - opened
+    - synchronize
+    - reopened
